@@ -29,6 +29,21 @@ button.on{background:var(--acc);color:var(--on);border-color:var(--acc)}textarea
 </main>
 <script>
 const ENDPOINT = "https://script.google.com/macros/s/AKfycbzPzCoh4y733i7T1l5NNh2rcNkSoP36C3u3uCWGp8BDzF40LdKSTmjAeka8gADZCSA14g/exec";   // Google Apps Script web app URL (set at deploy time)
+const PROMPTS = [
+ ["At five o'clock the two ladies retired to dress, and at half-past six Elizabeth was summoned to dinner. To the civil inquiries which then poured in, and amongst which she had the pleasure of distinguishing the much superior solicitude of Mr. Bingley, she could not make a very favourable answer. Jane was by no means better. The sisters, on hearing this, repeated three or four times how much they were grieved, how shocking it was to have a bad cold, and how excessively they disliked being ill themselves; and then thought no more of the matter: and their indifference towards Jane, when not immediately before them, restored Elizabeth to the enjoyment of all her original dislike.",
+  "다섯 시에 두 숙녀는 옷을 갈아입으러 물러갔고, 여섯 시 반에 엘리자베스는 저녁 식사에 불려 갔다. 쏟아지는 예의 바른 안부 인사 속에서 빙리 씨의 훨씬 진심 어린 걱정을 알아보는 기쁨이 있었지만, 그녀는 좋은 대답을 할 수 없었다. 제인은 전혀 나아지지 않았다. 자매들은 이를 듣고 서너 번이나 얼마나 슬픈지, 독감이란 얼마나 끔찍한지, 자신들은 아픈 게 얼마나 싫은지를 되풀이하더니 곧 더는 생각하지 않았다. 눈앞에 없을 때의 제인에 대한 그들의 무관심은 엘리자베스에게 원래의 반감을 고스란히 되살려 주었다. (오만과 편견)"],
+ ["Panda playing the guitar", "기타를 치는 판다"],
+ ["A woman sipping a steaming cup of tea.", "김이 나는 차 한 잔을 홀짝이는 여자"],
+ ["There all hands were already congregated. A belt of fog had lifted almost simultaneously with the appearance of the moon. Away to the south-west of us we saw two low hills, about a couple of miles apart, and rising behind one of them a third and higher hill, whose peak was still buried in the fog. All three seemed sharp and conical in figure.",
+  "그곳에는 이미 선원 전원이 모여 있었다. 달이 떠오르는 것과 거의 동시에 안개 띠가 걷혔다. 남서쪽으로 2마일쯤 떨어진 낮은 언덕 두 개가 보였고, 그중 하나 뒤로 세 번째의 더 높은 언덕이 솟아 있었는데 그 봉우리는 아직 안개에 묻혀 있었다. 세 언덕 모두 뾰족한 원뿔 모양으로 보였다. (보물섬)"],
+ ["A person baking bread in an oven powered by dragon fire.", "용의 불로 데우는 화덕에서 빵을 굽는 사람"],
+ ["A tilt-down from the ceiling of a cathedral, revealing the intricate mosaics and the altar.", "성당 천장에서 아래로 카메라가 내려오며 정교한 모자이크와 제단을 드러내는 장면"],
+ ["A jet fighter accelerating off an aircraft carrier deck, quickly gaining altitude.", "항공모함 갑판에서 가속해 이륙하고 빠르게 고도를 높이는 전투기"],
+ ["A cat leaps out of a cardboard box in a very high arch and lands into a taller box sitting next to the original box.", "고양이가 종이 상자에서 아주 높은 포물선을 그리며 뛰어올라, 옆에 있는 더 높은 상자 안으로 들어간다"],
+ ["Basketball through hoop then explodes.", "농구공이 골대를 통과한 뒤 폭발한다"],
+ ["A jet ski accelerating across the water, creating large splashes.", "큰 물보라를 일으키며 물 위를 가속하는 제트스키"],
+ ["an old man wearing blue jeans and a white t shirt taking a pleasant stroll in Antarctica during a colorful festival", "청바지와 흰 티셔츠를 입은 노인이 화려한 축제가 열린 남극에서 즐겁게 산책한다"],
+ ["Vendors set up stalls at a bustling farmer's market, displaying fresh fruits and vegetables, while people stroll through, selecting produce and enjoying the lively atmosphere.", "북적이는 농산물 시장에서 상인들이 신선한 과일과 채소를 진열하고, 사람들이 거닐며 물건을 고르고 활기찬 분위기를 즐긴다"]];
 const N = 12, OPT = [["A","A가 나음 / A better"],["T","같음 / Same"],["B","B가 나음 / B better"]];
 const $ = id => document.getElementById(id);
 let saved = {};
@@ -52,7 +67,7 @@ function push(final) {
 }
 for (let i = 1; i <= N; i++) {
   const id = "q" + i, s = document.createElement("section");
-  s.innerHTML = `<h2>${i}번 / Q${i}</h2><div class="row"><figure><video src="q${i}_A.mp4" controls playsinline preload="metadata"></video><figcaption>A</figcaption></figure><figure><video src="q${i}_B.mp4" controls playsinline preload="metadata"></video><figcaption>B</figcaption></figure></div><div class="btns">${OPT.map(([v, t]) => `<button data-v="${v}">${t}</button>`).join("")}</div><textarea placeholder="이유 (선택) / reason (optional)" maxlength="500"></textarea>`;
+  s.innerHTML = `<h2>${i}번 / Q${i}</h2><p><b>Prompt:</b> ${PROMPTS[i-1][0]}<br><b>프롬프트:</b> ${PROMPTS[i-1][1]}</p><div class="row"><figure><video src="q${i}_A.mp4" controls playsinline preload="metadata"></video><figcaption>A</figcaption></figure><figure><video src="q${i}_B.mp4" controls playsinline preload="metadata"></video><figcaption>B</figcaption></figure></div><div class="btns">${OPT.map(([v, t]) => `<button data-v="${v}">${t}</button>`).join("")}</div><textarea placeholder="이유 (선택) / reason (optional)" maxlength="500"></textarea>`;
   const bs = s.querySelectorAll("button"), ta = s.querySelector("textarea");
   const paint = () => bs.forEach(b => b.classList.toggle("on", state[id]?.verdict === b.dataset.v));
   bs.forEach(b => b.onclick = () => { state[id] = { ...(state[id] || {}), verdict: b.dataset.v }; paint(); push(); });
