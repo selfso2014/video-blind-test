@@ -47,11 +47,11 @@ const PROMPTS = [
 const N = 12, OPT = [["A","A가 나음 / A better"],["T","같음 / Same"],["B","B가 나음 / B better"]];
 const $ = id => document.getElementById(id);
 let saved = {};
-try { saved = JSON.parse(localStorage.getItem("vbt12") || "{}"); } catch (e) {}
+try { saved = JSON.parse(localStorage.getItem("vbt12r2") || "{}"); } catch (e) {}
 const rater = saved.rater || (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2));
 const state = saved.state || {};
 $("nm").value = saved.name || "";
-function local() { try { localStorage.setItem("vbt12", JSON.stringify({ rater, state, name: $("nm").value })); } catch (e) {} }
+function local() { try { localStorage.setItem("vbt12r2", JSON.stringify({ rater, state, name: $("nm").value })); } catch (e) {} }
 function count() { const n = Object.values(state).filter(x => x && x.verdict).length; $("cnt").textContent = n + " / " + N; return n; }
 let timer = null;
 function push(final) {
@@ -59,7 +59,7 @@ function push(final) {
   if (!ENDPOINT) { $("st").textContent = "저장 서버 미설정 (로컬에만 저장)"; return; }
   clearTimeout(timer);
   timer = setTimeout(() => {
-    const body = JSON.stringify({ rater, name: $("nm").value, answers: state, final: !!final, ua: navigator.userAgent.slice(0, 120) });
+    const body = JSON.stringify({ rater: "r2:" + rater, name: $("nm").value, answers: state, final: !!final, ua: navigator.userAgent.slice(0, 120) });
     fetch(ENDPOINT, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain" }, body })
       .then(() => { $("st").textContent = "저장됨 / saved"; if (final) { $("fin").textContent = "감사합니다! 제출되었습니다. / Thank you, submitted."; $("fin").className = "done"; } })
       .catch(() => { $("st").textContent = "저장 실패 - 잠시 후 다시 눌러 주세요 / save failed, retry"; });
