@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Video Blind Test</title>
+<style>
+:root{--bg:#f6f5f2;--fg:#1d1c1a;--mut:#6b6862;--card:#fff;--line:#e2dfd8;--acc:#2f5d8a;--on:#fff;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#161615;--fg:#ecebe7;--mut:#a09d96;--card:#201f1d;--line:#34322f;--acc:#7fb0e0;--on:#111;color-scheme:dark}}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,"Malgun Gothic",sans-serif;padding:20px max(16px,env(safe-area-inset-left)) 60px}
+main{max-width:1100px;margin:0 auto;display:grid;gap:20px}h1{font-size:22px;margin:0}p{margin:0;max-width:72ch;color:var(--mut)}
+section{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;display:grid;gap:10px}h2{font-size:16px;margin:0}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}figure{margin:0;display:grid;gap:4px;min-width:0}figcaption{font-size:13px;color:var(--mut)}video{width:100%;border-radius:6px;background:#000}
+.btns{display:flex;flex-wrap:wrap;gap:8px}button{border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:6px;padding:8px 14px;font:inherit;cursor:pointer}
+button.on{background:var(--acc);color:var(--on);border-color:var(--acc)}textarea,input{width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg);font:inherit;padding:8px}textarea{min-height:44px}
+.bar{position:sticky;top:0;background:var(--bg);padding:8px 0;z-index:5;display:flex;gap:12px;align-items:center;flex-wrap:wrap;border-bottom:1px solid var(--line)}
+.st{font-size:13px;color:var(--mut)}.done{font-weight:600;color:var(--acc)}
+</style>
+</head>
+<body>
+<main>
+<div><h1>영상 블라인드 테스트 / Video blind test</h1>
+<p>12개 문항입니다. 문항마다 같은 이야기를 두 AI 영상(A, B)으로 만들었습니다. 두 영상을 끝까지 보고 더 나은 쪽을 고르거나, 비슷하면 "같음"을 눌러 주세요. 이유를 짧게 적어 주시면 큰 도움이 됩니다. 로그인은 필요 없고 답은 자동으로 저장됩니다. 약 10~15분 걸립니다.<br><br>
+12 questions. Each shows two AI videos (A, B) of the same story. Watch both, pick the better one or "Same", and add a short reason if you can. No login; answers save automatically.</p></div>
+<section><label for="nm">이름 또는 닉네임 (선택) / Name or nickname (optional)</label><input id="nm" maxlength="60"></section>
+<div class="bar"><span id="cnt" class="st">0 / 12</span><span id="st" class="st"></span></div>
+<div id="list" style="display:grid;gap:20px"></div>
+<section><button id="send">제출 / Submit</button><span id="fin" class="st"></span></section>
+</main>
+<script>
+const ENDPOINT = "";   // Google Apps Script web app URL (set at deploy time)
+const N = 12, OPT = [["A","A가 나음 / A better"],["T","같음 / Same"],["B","B가 나음 / B better"]];
+const $ = id => document.getElementById(id);
+let saved = {};
+try { saved = JSON.parse(localStorage.getItem("vbt12") || "{}"); } catch (e) {}
+const rater = saved.rater || (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2));
+const state = saved.state || {};
+$("nm").value = saved.name || "";
+function local() { try { localStorage.setItem("vbt12", JSON.stringify({ rater, state, name: $("nm").value })); } catch (e) {} }
+function count() { const n = Object.values(state).filter(x => x && x.verdict).length; $("cnt").textContent = n + " / " + N; return n; }
+let timer = null;
+function push(final) {
+  local(); count();
+  if (!ENDPOINT) { $("st").textContent = "저장 서버 미설정 (로컬에만 저장)"; return; }
+  clearTimeout(timer);
+  timer = setTimeout(() => {
+    const body = JSON.stringify({ rater, name: $("nm").value, answers: state, final: !!final, ua: navigator.userAgent.slice(0, 120) });
+    fetch(ENDPOINT, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain" }, body })
+      .then(() => { $("st").textContent = "저장됨 / saved"; if (final) { $("fin").textContent = "감사합니다! 제출되었습니다. / Thank you, submitted."; $("fin").className = "done"; } })
+      .catch(() => { $("st").textContent = "저장 실패 - 잠시 후 다시 눌러 주세요 / save failed, retry"; });
+  }, final ? 0 : 800);
+}
+for (let i = 1; i <= N; i++) {
+  const id = "q" + i, s = document.createElement("section");
+  s.innerHTML = `<h2>${i}번 / Q${i}</h2><div class="row"><figure><video src="q${i}_A.mp4" controls playsinline preload="metadata"></video><figcaption>A</figcaption></figure><figure><video src="q${i}_B.mp4" controls playsinline preload="metadata"></video><figcaption>B</figcaption></figure></div><div class="btns">${OPT.map(([v, t]) => `<button data-v="${v}">${t}</button>`).join("")}</div><textarea placeholder="이유 (선택) / reason (optional)" maxlength="500"></textarea>`;
+  const bs = s.querySelectorAll("button"), ta = s.querySelector("textarea");
+  const paint = () => bs.forEach(b => b.classList.toggle("on", state[id]?.verdict === b.dataset.v));
+  bs.forEach(b => b.onclick = () => { state[id] = { ...(state[id] || {}), verdict: b.dataset.v }; paint(); push(); });
+  ta.value = state[id]?.text || "";
+  ta.oninput = () => { state[id] = { ...(state[id] || {}), text: ta.value }; push(); };
+  paint(); $("list").appendChild(s);
+}
+$("nm").oninput = () => push();
+$("send").onclick = () => { if (count() < N && !confirmMissing()) return; push(true); };
+function confirmMissing() { $("fin").textContent = (N - count()) + "개 문항이 비어 있습니다. 그래도 제출하려면 다시 누르세요. / Some questions are empty; press again to submit anyway."; if ($("send").dataset.warned) return true; $("send").dataset.warned = "1"; return false; }
+count(); if (!ENDPOINT) $("st").textContent = "";
+</script>
+</body>
+</html>
